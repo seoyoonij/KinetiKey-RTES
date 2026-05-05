@@ -17,23 +17,15 @@ Motion password system.
 
 # Detection Logic
 * motion → compress → scalars → match scalars
-* Δ=∣Performed−Recorded|, threshold for each
-* 3D vector distance:  
+* General approach: Δ=∣Performed−Recorded|, threshold for each
+* Each point is a vector in 3D.
 
-         data      |           information            | input
-    ----------------------------------------------------------------------------------
-     vector        | direction/magnitude of rotation  |  gyro 
-     Euclidean d   | accuracy of motion               |  d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
-     intensity     | max angular velocity             |  gyro     
-     duration      | how long is motion               | Timer
-
-    | Data          | Information                        | Input                                           |
-    |---------------|------------------------------------|-------------------------------------------------|
-    | Vector        | Direction/magnitude of rotation    | Gyro                                            |
-    | Euclidean d   | Accuracy of motion                 | d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)     |
-    | Intensity     | Max angular velocity               | Gyro                                            |
-    | Duration      | How long is motion                 | Timer                                           |
-
+| Data          | Information                        | Input                                           |
+|---------------|------------------------------------|-------------------------------------------------|
+| Vector        | Direction/magnitude of rotation    | Gyro                                            |
+| Euclidean d   | Accuracy of motion                 | d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)     |
+| Intensity     | Max angular velocity               | Gyro                                            |
+| Duration      | How long is motion                 | Timer                                           |
 
 
 # Gesture Logic (State Machine)
