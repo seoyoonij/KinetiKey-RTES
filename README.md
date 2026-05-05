@@ -27,6 +27,13 @@ Motion password system.
      intensity     | max angular velocity             |  gyro     
      duration      | how long is motion               | Timer
 
+    | Data          | Information                        | Input                                           |
+    |---------------|------------------------------------|-------------------------------------------------|
+    | Vector        | Direction/magnitude of rotation    | Gyro                                            |
+    | Euclidean d   | Accuracy of motion                 | d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)     |
+    | Intensity     | Max angular velocity               | Gyro                                            |
+    | Duration      | How long is motion                 | Timer                                           |
+
 
 
 # Gesture Logic (State Machine)
