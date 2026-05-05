@@ -12,6 +12,7 @@ typedef struct
 } Gesture_t;
 
 void Gesture_Reset(Gesture_t *g);
-void Gesture_Update(Gesture_t *g, );
+void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt);
+float Gesture_Error(Gesture_t performed, Gesture_t recorded); // use Euclidean vector distance
 
 #endif
