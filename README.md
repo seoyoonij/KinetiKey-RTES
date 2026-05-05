@@ -1,0 +1,52 @@
+Motion password system.
+
+# Defining motion passwords
+### Distinction criteria
+* Angle of tilt: 45deg ≠ 60 deg
+* Shape: circle ≠ triangle
+* Intensity: slow push ≠ jerk; fast circle ≠ slow circle
+* Size: small circle ≠ large circle
+
+### End-of-Gesture
+* current: time-based pause
+* consideration: closed shape/ physical End-of-Gesture
+
+### Example gestures
+* tilt, shapes, curves, etc.
+
+
+# Detection Logic
+* motion → compress → scalars → match scalars
+* Δ=∣Performed−Recorded|, threshold for each
+* 3D vector distance:  
+
+         data      |           information            | input
+    ----------------------------------------------------------------------------------
+     vector        | direction/magnitude of rotation  |  gyro 
+     Euclidean d   | accuracy of motion               |  d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)
+     intensity     | max angular velocity             |  gyro     
+     duration      | how long is motion               | Timer
+
+
+
+# Gesture Logic (State Machine)
+* 3 states
+* Driven by button interrupts
+
+IDLE -> [button press] -> RECORDING -> [3 gestures done] -> IDLE \
+IDLE -> [button hold] -> UNLOCKING -> [3 gestures done] -> PASS/FAIL -> IDLE
+
+# Pipeline Overview
+[ SENSE -> CAPTURE -> COMPARE -> DECIDE ]
+
+IMU Sample (Ticker, 50Hz)
+    ↓
+Gesture Window Capture (ring buffer, ~100 samples)
+    ↓
+Feature Extraction (magnitude signal √ax²+ay²+az²)
+    ↓
+Gesture Boundary Detection (motion start/end via threshold)
+    ↓
+Store or Compare (DTW against stored template)
+    ↓
+LED Feedback
