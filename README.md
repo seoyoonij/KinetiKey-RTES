@@ -23,7 +23,7 @@ Motion password system.
 | Data          | Information                        | Input                                           |
 |---------------|------------------------------------|-------------------------------------------------|
 | Vector        | Direction/magnitude of rotation    | Gyro                                            |
-| Euclidean d   | Accuracy of motion                 | d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)     |
+| Euclidean distance   | Accuracy of motion                 | d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)     |
 | Intensity     | Max angular velocity               | Gyro                                            |
 | Duration      | How long is motion                 | Timer                                           |
 
@@ -32,8 +32,18 @@ Motion password system.
 * 3 states
 * Driven by button interrupts
 
-IDLE -> [button press] -> RECORDING -> [3 gestures done] -> IDLE \
-IDLE -> [button hold] -> UNLOCKING -> [3 gestures done] -> PASS/FAIL -> IDLE
+IDLE -> [button hold] -> RECORDING -> [3 gestures done] -> IDLE \
+IDLE -> [button press] -> UNLOCKING -> [3 gestures done] -> PASS/FAIL -> IDLE \
+
+*during RECORDING/UNLOCKING, subloop pseudocde:*
+* WAIT 
+* if motion is big enough, enter OBSERVE
+* OBSERVE (high priority, over Nyquist): \
+    start logging motion. \
+    if motion is small for long enough, then one motion is done. 
+* EVALUATE (low priority- ISR): \ 
+    if above threshold error (pass), then blink LED, move onto next motion.\
+    else (fail), then reset motion count, return to IDLE state.
 
 # Pipeline Overview
 [ SENSE -> CAPTURE -> COMPARE -> DECIDE ]
