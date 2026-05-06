@@ -1,6 +1,6 @@
 #include "LSM6DSL.h"
 
-LSM6DSL::LSM6DSL(PinName sda, PinName scl) : _i2c(sda, scl)
+LSM6DSL::LSM6DSL(PinName sda, PinName scl, Timer &t) : _i2c(sda, scl), _timer(t)
 {
     _i2c.frequency(400000);
 }
@@ -30,22 +30,22 @@ bool LSM6DSL::init()
     return true;
 }
 
-bool LSM6DSL::readAccelXYZ(float &x, float &y, float &z)
+bool LSM6DSL::readAccel(IMUReading &reading)
 {
     uint8_t lo, hi;
     float scale = _accelSensitivity / 1000.0f; // in g
 
     lo = readReg(0x28);
     hi = readReg(0x29);
-    x = (int16_t)((hi << 8) | lo) * scale;
+    reading.x = (int16_t)((hi << 8) | lo) * scale;
 
     lo = readReg(0x2A);
     hi = readReg(0x2B);
-    y = (int16_t)((hi << 8) | lo) * scale;
+    reading.y = (int16_t)((hi << 8) | lo) * scale;
 
     lo = readReg(0x2C);
     hi = readReg(0x2D);
-    z = (int16_t)((hi << 8) | lo) * scale;
+    reading.z = (int16_t)((hi << 8) | lo) * scale;
 
     return true;
 }

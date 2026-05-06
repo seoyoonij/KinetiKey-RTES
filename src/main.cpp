@@ -1,56 +1,45 @@
 #include "mbed.h"
 #include <chrono> // c++ time library
 #include "LSM6DSL.h"
+#include "data_struct.h"
 #include "gesture.h"
 #include "states.h"
 using namespace std::chrono;
 
-/**
-=== File structure===
-GESTURE: vectors and math
-STATES: IDLE, RECORDING, UNLOCKING etc.
-IMU: imu driver functions
-MAIN: timing
-=====================
-*/
+Timer t;                      // clock
+LSM6DSL imu(PB_11, PB_10, t); // IMU: I2C config
+// InterruptIn imu_int1(PB_2);   // IMU: interrupt config
 
-LSM6DSL imu(PB_11, PB_10); // IMU: I2C config
-// Teleplot
+// Teleplot config
 BufferedSerial serial_port(USBTX, USBRX, 115200);
 FileHandle *mbed::mbed_override_console(int)
 {
     return &serial_port;
 }
-InterruptIn imu_int1(PB_2); // IMU: interrupt config
-Timer t;
 
 int main()
 {
+    t.start();
     if (!imu.init())
     {
-        printf("Sensor Error!\r\n");
+        printf("IMU init failed\r\n");
         return -1;
     }
 
-    t.start();
-    uint32_t lastPrintTime = 0;
+    IMUReading currentReading;
 
     while (true)
     {
         float x, y, z;
         // Read IMU
-        if (imu.readAccelXYZ(x, y, z))
+        if (imu.readAccel(currentReading))
         {
-            // gesture detection
+            // gesture detection logic
+
+            // Serial monitor
+            printf("Time: %lu ms | X: %.2f g | Y: %.2f g | Z: %.2f g\r\n", currentReading.timestamp_ms, currentReading.x, currentReading.y, currentReading.z);
         }
 
-        // Serial monitor
-        uint32_t currentTime = duration_cast<milliseconds>(t.elapsed_time()).count();
-        if (currentTime - lastPrintTime >= 100)
-        {
-            lastPrintTime = currentTime;
-            printf("X: %.3f | Y: %.3f | Z: %.3f\r\n", x, y, z);
-        }
-        ThisThread::sleep_for(2ms);
+        ThisThread::sleep_for(5ms);
     }
 }

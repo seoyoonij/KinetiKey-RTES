@@ -2,6 +2,7 @@
 #define LSM6DSL_H
 
 #include "mbed.h"
+#include "data_struct.h"
 
 class LSM6DSL
 {
@@ -18,16 +19,17 @@ public:
         OUTZ_L_XL = 0x2C
     };
 
-    LSM6DSL(PinName sda, PinName scl);
+    LSM6DSL(PinName sda, PinName scl, Timer &t);
     bool init();
-    bool readAccelXYZ(float &x, float &y, float &z);
+    bool readAccel(IMUReading &reading);
     bool enableDataReadyInterrupt();
 
 private:
     I2C _i2c;
+    Timer &_timer;
     void writeReg(uint8_t reg, uint8_t val);
     uint8_t readReg(uint8_t reg);
-    float _accelSensitivity; //
+    float _accelSensitivity; // scale (milli-g/LSB)
 };
 
 #endif
