@@ -1,11 +1,11 @@
 #include "mbed.h"
+#include <chrono> // c++ time library
 #include "LSM6DSL.h"
 #include "gesture.h"
 #include "states.h"
+using namespace std::chrono;
 
 /**
-TODO:
-
 === File structure===
 GESTURE: vectors and math
 STATES: IDLE, RECORDING, UNLOCKING etc.
@@ -15,25 +15,42 @@ MAIN: timing
 */
 
 LSM6DSL imu(PB_11, PB_10); // IMU: I2C config
+// Teleplot
+BufferedSerial serial_port(USBTX, USBRX, 115200);
+FileHandle *mbed::mbed_override_console(int)
+{
+    return &serial_port;
+}
 InterruptIn imu_int1(PB_2); // IMU: interrupt config
-EventQueue queue(32 * EVENTS_EVENT_SIZE);
-Thread t;
+Timer t;
 
 int main()
 {
     if (!imu.init())
     {
-        printf("Sensor Error!\n");
+        printf("Sensor Error!\r\n");
         return -1;
     }
 
+    t.start();
+    uint32_t lastPrintTime = 0;
+
     while (true)
     {
-        float acc_z = imu.readAccelZ();
+        float x, y, z;
+        // Read IMU
+        if (imu.readAccelXYZ(x, y, z))
+        {
+            // gesture detection
+        }
 
-        // ... (Do your FFT and Moving Average math here)
-
-        printf(">Raw_Acc:%.2f\n", acc_z);
-        ThisThread::sleep_for(9ms);
+        // Serial monitor
+        uint32_t currentTime = duration_cast<milliseconds>(t.elapsed_time()).count();
+        if (currentTime - lastPrintTime >= 100)
+        {
+            lastPrintTime = currentTime;
+            printf("X: %.3f | Y: %.3f | Z: %.3f\r\n", x, y, z);
+        }
+        ThisThread::sleep_for(2ms);
     }
 }
