@@ -30,11 +30,18 @@ int main()
 
     while (true)
     {
-        float x, y, z;
         // Read IMU
         if (imu.readAccel(currentReading))
         {
-            // gesture detection logic
+            // Start observing motion
+
+            // TODO: make switch-case: switch (currentState) and "if currentState == pre-RECORDING"
+            if (isMotionDetected(currentReading))
+            {
+                // TODO: update currentState = RECORDING;
+                printf("Movement started at %lu ms\n", currentReading.timestamp_ms);
+                printf("Motion Detected! Recording started...\n");
+            }
 
             // Serial monitor
             printf("Time: %lu ms | X: %.2f g | Y: %.2f g | Z: %.2f g\r\n", currentReading.timestamp_ms, currentReading.x, currentReading.y, currentReading.z);

@@ -37,3 +37,14 @@ float Gesture_Error(Gesture_t performed, Gesture_t recorded)
 
     return sqrtf(dx * dx + dy * dy + dz * dz);
 }
+
+bool isMotionDetected(const IMUReading &reading)
+{
+    // Calculate magnitude: sqrt(x^2 + y^2 + z^2)
+    float magnitude = sqrt(reading.x * reading.x + reading.y * reading.y + reading.z * reading.z);
+
+    // Deviation from 1G (gravity)
+    float deviation = fabsf(magnitude - 1.0f);
+
+    return (deviation > MOTION_THRESHOLD);
+}

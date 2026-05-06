@@ -1,5 +1,12 @@
 Motion password system.
 
+=== File structure===
+GESTURE: vectors and math
+STATES: IDLE, RECORDING, UNLOCKING etc.
+IMU: imu driver functions
+MAIN: timing
+=====================
+
 # Defining motion passwords
 ### Distinction criteria
 * Angle of tilt: 45deg ≠ 60 deg
