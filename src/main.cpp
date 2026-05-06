@@ -1,7 +1,6 @@
 #include "mbed.h"
-
+#include "LSM6DSL.h"
 #include "gesture.h"
-#include "imu_interface.h"
 #include "states.h"
 
 /**
@@ -13,29 +12,28 @@ STATES: IDLE, RECORDING, UNLOCKING etc.
 IMU: imu driver functions
 MAIN: timing
 =====================
+*/
 
-1. Let's start with "IMU reading -> package into our datastruct" part working.
+LSM6DSL imu(PB_11, PB_10); // IMU: I2C config
+InterruptIn imu_int1(PB_2); // IMU: interrupt config
+EventQueue queue(32 * EVENTS_EVENT_SIZE);
+Thread t;
 
-2. Sensor config:
-IMU would have to be sampled above Nyquist rate
-gyro reading drifts, so empirically derive offset (read from sensor while perfectly still, repeat many times, average it)
-Then we can move onto detection algorithm
-
-3. Feel free to implement all functions in main.
-We can always move it out as a separte file later.
-
-4. Some notes on using git:
-- use branches temporarily for each feature
-- implement small features at a time and push
-- commit & merge when the feature is working and ready to be shared
-
-6. PLEASE DO NOT PASTE IN A HUGE SLOP OF AI-GEN CODEDUMP. BITESIZE & VALIDATE THX
-
-**/
-
-int main(void)
+int main()
 {
+    if (!imu.init())
+    {
+        printf("Sensor Error!\n");
+        return -1;
+    }
+
     while (true)
     {
+        float acc_z = imu.readAccelZ();
+
+        // ... (Do your FFT and Moving Average math here)
+
+        printf(">Raw_Acc:%.2f\n", acc_z);
+        ThisThread::sleep_for(9ms);
     }
 }

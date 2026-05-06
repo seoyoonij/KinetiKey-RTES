@@ -25,7 +25,7 @@ void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt)
     }
 
     // Track Time
-    g->axes[3] += (uint32_t)(dt * 1000.0f);
+    g->duration_ms += (uint32_t)(dt * 1000.0f);
 }
 
 float Gesture_Error(Gesture_t performed, Gesture_t recorded)

@@ -45,7 +45,7 @@ IDLE -> [button press] -> UNLOCKING -> [3 gestures done] -> PASS/FAIL -> IDLE \
     if above threshold error (pass), then blink LED, move onto next motion.\
     else (fail), then reset motion count, return to IDLE state.
 
-# Pipeline Overview
+# Pipeline Overview (wip)
 [ SENSE -> CAPTURE -> COMPARE -> DECIDE ]
 
 IMU Sample (Ticker, 50Hz)
