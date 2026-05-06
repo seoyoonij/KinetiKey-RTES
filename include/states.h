@@ -13,6 +13,7 @@ IDLE -> [button press] -> UNLOCKING -> [3 gestures done] -> PASS/FAIL -> IDLE
 #include <stdbool.h>
 #include "gesture.h"
 
+// define the possible states of the lock
 typedef enum
 {
     STATE_IDLE,
@@ -22,13 +23,27 @@ typedef enum
     STATE_FAIL
 } LockState;
 
+// define the possible results of handling a completed gesture
+typedef enum
+{
+    GESTURE_IGNORED,
+    GESTURE_RECORDED,
+    GESTURE_MATCHED,
+    RECORD_COMPLETE,
+    UNLOCK_COMPLETE,
+    UNLOCK_FAILED
+} GestureResult;
+
 void States_Init();
 void States_StartRecord();
 void States_StartUnlock();
-void States_HandleGestureComplete(Gesture_t gesture);
+void States_ResetToIdle();
+
+GestureResult States_HandleGestureComplete(Gesture_t gesture);
 
 LockState States_GetState();
 uint8_t States_GetGestureIndex();
 bool States_HasRecordedKey();
+float States_GetLastError();
 
 #endif
