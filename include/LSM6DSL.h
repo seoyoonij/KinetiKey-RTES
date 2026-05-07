@@ -15,6 +15,7 @@ public:
     {
         WHO_AM_I = 0x0F,
         CTRL1_XL = 0x10,
+        CTRL2_G = 0x11,
         CTRL3_C = 0x12,
         OUTZ_L_XL = 0x2C
     };
