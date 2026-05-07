@@ -1,6 +1,26 @@
-1. first read from imu
-2. store that in a custom structure: 3d vector of the point, timestamp, etc.
-3. finish the "recording" logic: involve button press interrupt + time/motion intensity threshold to move from one motino to the next
-4. make states: IDLE, RECORDING, UNLOCKING
-5. finish unlocking logic: this involves comparing euclidean distance + fft if needed
-6. link everything with IDLE
+1. add gyro reads to LSM6DSL.cpp
+2. build gesture capture:
+   - wait for motion
+   - start logging samples
+   - keep updating Gesture_t
+   - end gesture after motion is quiet for long enough
+3. connect gesture capture to STATE_RECORDING:
+   - long press enters record mode
+   - capture 3 gestures
+   - call States_HandleGestureComplete() after each gesture
+   - blink/print after each recorded gesture
+4. connect gesture capture to STATE_UNLOCKING:
+   - short press enters unlock mode
+   - capture 3 gestures
+   - compare each gesture to recorded key
+   - pass/fail based on States_HandleGestureComplete()
+5. flesh out Gesture_Error():
+   - compare gyro rotation vector
+   - compare duration
+   - compare peak velocity/intensity
+   - add FFT features later if needed
+6. tune thresholds on the actual board:
+   - motion start threshold
+   - end-of-gesture quiet time
+   - gesture match tolerance
+

@@ -38,6 +38,7 @@ void States_Init();
 void States_StartRecord();
 void States_StartUnlock();
 void States_ResetToIdle();
+void States_ClearKey();
 
 GestureResult States_HandleGestureComplete(Gesture_t gesture);
 

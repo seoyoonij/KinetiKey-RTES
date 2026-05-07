@@ -5,6 +5,7 @@ static LockState current_state = STATE_IDLE;
 static Gesture_t recorded_key[3];
 static uint8_t gesture_index = 0;
 static bool key_recorded = false;
+static bool unlocked = false;
 static float last_error = 0.0f;
 
 static const uint8_t REQUIRED_GESTURES = 3;
@@ -17,6 +18,7 @@ void States_Init()
     gesture_index = 0;
     key_recorded = false;
     last_error = 0.0f;
+    unlocked = false;
 
     for (uint8_t i = 0; i < REQUIRED_GESTURES; i++)
     {
@@ -27,9 +29,17 @@ void States_Init()
 // called when button is held down to start recording
 void States_StartRecord()
 {
+    // if already have a recorded key and not unlocked yet, fail immediately
+    if (key_recorded && !unlocked)
+    {
+        current_state = STATE_FAIL;
+        return;
+    }
+
     current_state = STATE_RECORDING;
     gesture_index = 0;
     key_recorded = false;
+    unlocked = false;
     last_error = 0.0f;
 }
 
@@ -52,6 +62,21 @@ void States_ResetToIdle()
 {
     current_state = STATE_IDLE;
     gesture_index = 0;
+}
+
+// called to clear the recorded key, can be triggered by a long press while idle
+void States_ClearKey()
+{
+    current_state = STATE_IDLE;
+    gesture_index = 0;
+    key_recorded = false;
+    unlocked = false;
+    last_error = 0.0f;
+
+    for (uint8_t i = 0; i < REQUIRED_GESTURES; i++)
+    {
+        Gesture_Reset(&recorded_key[i]);
+    }
 }
 
 // called when a gesture is completed, returns the result of the gesture handling
@@ -98,6 +123,7 @@ GestureResult States_HandleGestureComplete(Gesture_t gesture)
         // if all 3 gestures matched, unlock successful
         if (gesture_index >= REQUIRED_GESTURES)
         {
+            unlocked = true;
             current_state = STATE_PASS;
             gesture_index = 0;
             return UNLOCK_COMPLETE;
