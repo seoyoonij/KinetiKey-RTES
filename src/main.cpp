@@ -11,7 +11,7 @@ LSM6DSL imu(PB_11, PB_10, t); // IMU: I2C config
 // InterruptIn imu_int1(PB_2);   // IMU: interrupt config
 InterruptIn user_button(PC_13);
 DigitalOut green_led(LED1); // LD1 green, PA5
-DigitalOut red_led(PE_3);   // LD8 red, PE3
+DigitalOut green_led2(LED2); // LD2 green, PB14
 
 // button state tracking
 volatile bool buttonDown = false;
@@ -20,6 +20,7 @@ volatile uint32_t buttonDownMs = 0;
 volatile uint32_t buttonHoldMs = 0;
 static const uint32_t LONG_PRESS_MS = 1000; // hold 1s for recording, adjust as needed
 static const uint32_t RESET_PRESS_MS = 5000; //hold 5s for factory reset, adjust as needed
+static const uint32_t RESULT_STATE_MS = 3000;
 
 // Teleplot config
 BufferedSerial serial_port(USBTX, USBRX, 115200);
@@ -54,35 +55,35 @@ static void updateLedsForState()
 
     switch (States_GetState())
     {
-    // green for pass
+    // green 1 for pass
     case STATE_PASS:
         green_led = 1;
-        red_led = 0;
+        green_led2 = 0;
         break;
 
-    // red for fail
+    // green 2 for fail
     case STATE_FAIL:
         green_led = 0;
-        red_led = 1;
+        green_led2 = 1;
         break;
 
     // blink asynchronously for recording
     case STATE_RECORDING:
         green_led = blinkOn ? 0 : 1;
-        red_led = blinkOn ? 1 : 0;
+        green_led2 = blinkOn ? 1 : 0;
         break;
 
     // blink synchronously for unlocking
     case STATE_UNLOCKING:
         green_led = blinkOn ? 1 : 0;
-        red_led = blinkOn ? 1 : 0;
+        green_led2 = blinkOn ? 1 : 0;
         break;
 
     // off for idle
     case STATE_IDLE:
     default:
         green_led = 0;
-        red_led = 0;
+        green_led2 = 0;
         break;
     }
 }
@@ -100,7 +101,7 @@ int main()
     user_button.fall(&button_fell);
     user_button.rise(&button_rose);
     green_led = 0;
-    red_led = 0;
+    green_led2 = 0;
 
     printf("System ready. State: IDLE\r\n");
 
@@ -134,28 +135,30 @@ int main()
         switch (States_GetState())
         {
         case STATE_IDLE:
-            // wait for button events
+            // TODO: wait for button input
             break;
 
         case STATE_RECORDING:
-            // capture gesture
-            // States_HandleGestureComplete(gesture);
+            // TODO: capture gesture, then call States_HandleGestureComplete(gesture)
             break;
 
         case STATE_UNLOCKING:
-            // capture gesture
-            // States_HandleGestureComplete(gesture);
+            // TODO: capture gesture, then call States_HandleGestureComplete(gesture)
             break;
 
         case STATE_PASS:
             printf("PASS\r\n");
-            ThisThread::sleep_for(1000ms);
+            green_led = 1;
+            green_led2 = 0;
+            ThisThread::sleep_for(RESULT_STATE_MS);
             States_ResetToIdle();
             break;
 
         case STATE_FAIL:
             printf("FAIL\r\n");
-            ThisThread::sleep_for(1000ms);
+            green_led = 0;
+            green_led2 = 1;
+            ThisThread::sleep_for(RESULT_STATE_MS);
             States_ResetToIdle();
             break;
         }
