@@ -10,7 +10,7 @@ Timer t;                      // clock
 LSM6DSL imu(PB_11, PB_10, t); // IMU: I2C config
 // InterruptIn imu_int1(PB_2);   // IMU: interrupt config
 InterruptIn user_button(PC_13);
-DigitalOut green_led(LED1);  // LD1 green, PA5
+DigitalOut green_led(LED1); // LD1 green, PA5
 DigitalOut green_led2(LED2); // LD2 green, PB14
 
 // button state tracking
@@ -19,7 +19,7 @@ volatile bool buttonReleased = false;
 volatile uint32_t buttonDownMs = 0;
 volatile uint32_t buttonHoldMs = 0;
 static const uint32_t LONG_PRESS_MS = 1000; // hold 1s for recording, adjust as needed
-// static const uint32_t RESET_PRESS_MS = 5000; // hold 5s for factory reset, adjust as needed
+static const uint32_t RESET_PRESS_MS = 5000; //hold 5s for factory reset, adjust as needed
 static const uint32_t RESULT_STATE_MS = 3000;
 
 // Teleplot config
@@ -97,9 +97,7 @@ int main()
         return -1;
     }
 
-    // initialize state
     States_Init();
-    // attach ISRs
     user_button.fall(&button_fell);
     user_button.rise(&button_rose);
     green_led = 0;
@@ -116,8 +114,12 @@ int main()
 
             if (States_GetState() == STATE_IDLE)
             {
-
-                if (buttonHoldMs >= LONG_PRESS_MS)
+                if (buttonHoldMs >= RESET_PRESS_MS)
+                {
+                    States_ClearKey();
+                    printf("Factory reset: key cleared\r\n");
+                }
+                else if (buttonHoldMs >= LONG_PRESS_MS)
                 {
                     States_StartRecord();
                     printf("RECORDING\r\n");
@@ -134,19 +136,6 @@ int main()
         {
         case STATE_IDLE:
             // TODO: wait for button input
-            IMUReading r;
-            if (imu.readIMU(r))
-            {
-                printf(">ax:%.3f\r\n", r.ax);
-                printf(">ay:%.3f\r\n", r.ay);
-                printf(">az:%.3f\r\n", r.az);
-                printf(">gx:%.3f\r\n", r.gx);
-                printf(">gy:%.3f\r\n", r.gy);
-                printf(">gz:%.3f\r\n", r.gz);
-                fflush(stdout);
-            }
-            break;
-            //
             break;
 
         case STATE_RECORDING:
