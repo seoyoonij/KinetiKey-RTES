@@ -9,9 +9,9 @@ static bool unlocked = false;
 static float last_error = 0.0f;
 
 static const uint8_t REQUIRED_GESTURES = 3;
-static const float GESTURE_ERROR_THRESHOLD = 30.0f; //needs tuning based on testing
+static const float GESTURE_ERROR_THRESHOLD = 30.0f; // needs tuning based on testing
 
-//initialize the state machine, called once at startup
+// initialize the state machine, called once at startup
 void States_Init()
 {
     current_state = STATE_IDLE;

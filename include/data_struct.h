@@ -4,9 +4,9 @@
 
 typedef struct
 {
-    float x;
-    float y;
-    float z;
+    float ax, ay, az; // accelerometer reading
+    float gx, gy, gz; // gyroscope reading
+
     uint32_t timestamp_ms;
 } IMUReading;
 
