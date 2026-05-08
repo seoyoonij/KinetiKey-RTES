@@ -4,6 +4,7 @@
 #include "data_struct.h"
 #include "gesture.h"
 #include "states.h"
+#include "compare.h"
 using namespace std::chrono;
 
 Timer t;                      // clock
