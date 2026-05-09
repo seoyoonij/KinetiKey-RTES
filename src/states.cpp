@@ -1,5 +1,6 @@
 #include "states.h"
 #include "gesture.h"
+#include "compare.h"
 
 static LockState current_state = STATE_IDLE;
 static Gesture_t recorded_key[3]; // stores the 3-gesture key
@@ -9,7 +10,6 @@ static bool unlocked = false;
 static float last_error = 0.0f;
 
 static const uint8_t REQUIRED_GESTURES = 3;
-static const float GESTURE_ERROR_THRESHOLD = 30.0f; // needs tuning based on testing
 
 // initialize the state machine, called once at startup
 void States_Init()
@@ -105,13 +105,14 @@ GestureResult States_HandleGestureComplete(const Gesture_t &gesture)
         return GESTURE_RECORDED;
     }
 
-    // compares performed gesture to recorded key
+    // calls compare.cpp and compares performed gesture to recorded key
     if (current_state == STATE_UNLOCKING)
     {
-        last_error = Gesture_Error(gesture, recorded_key[gesture_index]);
+        CompareResult compare = Compare_Gestures(gesture, recorded_key[gesture_index]);
+        last_error = compare.total_error;
 
-        // if error exceeds threshold, fail immediately
-        if (last_error > GESTURE_ERROR_THRESHOLD)
+        // if compare module says it does not match, fail immediately
+        if (!compare.matched)
         {
             current_state = STATE_FAIL;
             gesture_index = 0;
