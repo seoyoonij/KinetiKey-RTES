@@ -99,6 +99,12 @@ int main()
 
     States_Init();
     GestureSeparation_SetDefault();
+    // TEMP: FORCE TEST MODE
+    States_StartRecord();
+    GestureCapture_Reset();
+    printf("Gesture capture test started\r\n");
+    uint32_t lastPrint = 0;
+    GestureCaptureState prev = GestureCapture_GetState();
 
     // attach ISRs
     user_button.fall(&button_fell);
@@ -111,18 +117,15 @@ int main()
     while (true)
     {
         updateLedsForState();
+        IMUReading r; // one sample per loop
+
         if (buttonReleased)
         {
             buttonReleased = false;
 
             if (States_GetState() == STATE_IDLE)
             {
-                if (buttonHoldMs >= RESET_PRESS_MS)
-                {
-                    States_ClearKey();
-                    printf("Factory reset: key cleared\r\n");
-                }
-                else if (buttonHoldMs >= LONG_PRESS_MS)
+                if (buttonHoldMs >= LONG_PRESS_MS)
                 {
                     States_StartRecord();
                     GestureCapture_Reset(); // for one gesture
@@ -142,68 +145,92 @@ int main()
         case STATE_IDLE:
             // TODO: wait for button input
             // below is for debug
-            IMUReading r;
             if (imu.readIMU(r))
             {
-                float aDev = Gesture_AccelDeviationG(r.ax, r.ay, r.az);
-                float gMag = Gesture_GyroMagnitudeDps(r.gx, r.gy, r.gz);
-                bool moving = Gesture_IsMotionInstant(r.ax, r.ay, r.az, r.gx, r.gy, r.gz);
-                printf("aDev=%.3f gMag=%.1f moving=%d\r\n", aDev, gMag, (int)moving);
-            }
-            break;
-            //
-            break;
-
-        case STATE_RECORDING:
-            // TODO: capture gesture, then call States_HandleGestureComplete(gesture)
-            GestureCapture_Reset(); // for one gesture
-            if (imu.readIMU(r))
-            {
+                // start timestamp before gesture capture
+                r.timestamp_ms = (uint32_t)duration_cast<milliseconds>(t.elapsed_time()).count();
                 Gesture_t g;
                 if (GestureCapture_Update(&r, &g))
                 {
                     GestureResult gr = States_HandleGestureComplete(g);
-                    printf("GestureResult=%d idx=%u err=%.2f\r\n",
-                           (int)gr, States_GetGestureIndex(), States_GetLastError());
-                    fflush(stdout);
-                }
-            }
-            break;
 
-        case STATE_UNLOCKING:
-            // TODO: capture gesture, then call States_HandleGestureComplete(gesture)
-            GestureCapture_Reset(); // for one gesture
-            IMUReading r;
-            if (imu.readIMU(r))
-            {
-                Gesture_t g;
-                if (GestureCapture_Update(&r, &g))
+                    float aDev = Gesture_AccelDeviationG(r.ax, r.ay, r.az);
+                    float gMag = Gesture_GyroMagnitudeDps(r.gx, r.gy, r.gz);
+                    bool moving = Gesture_IsMotionInstant(r.ax, r.ay, r.az, r.gx, r.gy, r.gz);
+                    printf("aDev=%.3f gMag=%.1f moving=%d\r\n", aDev, gMag, (int)moving);
+                }
+                break;
+                //
+                break;
+
+            case STATE_RECORDING:
+                if (imu.readIMU(r))
                 {
-                    GestureResult gr = States_HandleGestureComplete(g);
-                    printf("GestureResult=%d idx=%u err=%.2f\r\n",
-                           (int)gr, States_GetGestureIndex(), States_GetLastError());
-                    fflush(stdout);
+                    r.timestamp_ms = (uint32_t)duration_cast<milliseconds>(t.elapsed_time()).count();
+                    float aDev = Gesture_AccelDeviationG(r.ax, r.ay, r.az);
+                    float gMag = Gesture_GyroMagnitudeDps(r.gx, r.gy, r.gz);
+                    bool moving = Gesture_IsMotionInstant(r.ax, r.ay, r.az, r.gx, r.gy, r.gz);
+
+                    GestureCaptureState cur = GestureCapture_GetState();
+                    if (cur != prev)
+                    {
+                        printf("CAP_STATE %d -> %d\r\n", (int)prev, (int)cur);
+                        prev = cur;
+                    }
+
+                    if (r.timestamp_ms - lastPrint >= 100)
+                    {
+                        printf("aDev=%.3f gMag=%.1f moving=%d state=%d\r\n",
+                               aDev, gMag, (int)moving, (int)cur);
+                        lastPrint = r.timestamp_ms;
+                    }
+
+                    Gesture_t g;
+                    if (GestureCapture_Update(&r, &g))
+                    {
+                        printf("GESTURE_DONE samples=%u duration=%lu ms\r\n",
+                               g.sample_count,
+                               (unsigned long)(g.end_time_ms - g.start_time_ms));
+                        fflush(stdout);
+                    }
                 }
+                ThisThread::sleep_for(5ms);
+
+                break;
+
+            case STATE_UNLOCKING:
+                // below is placeholder for evaluation logic
+                if (imu.readIMU(r))
+                {
+                    Gesture_t g;
+                    if (GestureCapture_Update(&r, &g))
+                    {
+                        GestureResult gr = States_HandleGestureComplete(g);
+                        printf("GestureResult=%d idx=%u err=%.2f\r\n",
+                               (int)gr, States_GetGestureIndex(), States_GetLastError());
+                        fflush(stdout);
+                    }
+                }
+                break;
+
+            case STATE_PASS:
+                printf("PASS\r\n");
+                green_led = 1;
+                green_led2 = 0;
+                ThisThread::sleep_for(RESULT_STATE_MS);
+                States_ResetToIdle();
+                break;
+
+            case STATE_FAIL:
+                printf("FAIL\r\n");
+                green_led = 0;
+                green_led2 = 1;
+                ThisThread::sleep_for(RESULT_STATE_MS);
+                States_ResetToIdle();
+                break;
             }
-            break;
 
-        case STATE_PASS:
-            printf("PASS\r\n");
-            green_led = 1;
-            green_led2 = 0;
-            ThisThread::sleep_for(RESULT_STATE_MS);
-            States_ResetToIdle();
-            break;
-
-        case STATE_FAIL:
-            printf("FAIL\r\n");
-            green_led = 0;
-            green_led2 = 1;
-            ThisThread::sleep_for(RESULT_STATE_MS);
-            States_ResetToIdle();
-            break;
+            ThisThread::sleep_for(5ms);
         }
-
-        ThisThread::sleep_for(5ms);
     }
 }

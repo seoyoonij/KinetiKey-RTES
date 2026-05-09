@@ -8,6 +8,6 @@ typedef struct
     float gx, gy, gz; // gyroscope reading
 
     uint32_t timestamp_ms;
-} IMUReading;
+} IMUReading; // : characterizes one sample type
 
 #endif

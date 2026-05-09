@@ -8,6 +8,7 @@ static Gesture_t s_current;
 static uint32_t s_motion_start_ms = 0;
 static uint32_t s_still_start_ms = 0;
 
+// === CHARACTERIZING GESTURE ===
 static uint16_t gesture_capacity(void)
 {
     return (uint16_t)(sizeof(s_current.samples) / sizeof(s_current.samples[0]));
@@ -38,7 +39,7 @@ void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt)
     g->duration_ms += (uint32_t)(dt * 1000.0f);
 }
 
-float Gesture_Error(Gesture_t performed, Gesture_t recorded)
+float Gesture_Error(const Gesture_t &performed, const Gesture_t &recorded)
 {
     // Euclidean distance between the two 3D points
     float dx = performed.axes[0] - recorded.axes[0];
@@ -47,17 +48,7 @@ float Gesture_Error(Gesture_t performed, Gesture_t recorded)
     return sqrtf(dx * dx + dy * dy + dz * dz);
 }
 
-bool isMotionDetected(const IMUReading &reading)
-{
-    // Calculate magnitude: sqrt(x^2 + y^2 + z^2)
-    float a_magnitude = sqrt(reading.ax * reading.ax + reading.ay * reading.ay + reading.az * reading.az);
-    // float g_magnitude = sqrt(reading.gx * reading.gx + reading.gy * reading.gy + reading.gz * reading.gz);
-
-    // Deviation from 1G (gravity)
-    float a_deviation = fabsf(a_magnitude - 1.0f);
-    return (a_deviation > MOTION_THRESHOLD);
-}
-
+// === SEPARATION CONFIG ===
 void GestureSeparation_SetDefault(void)
 {
     g_cfg.accel_start_threshold = 0.18f;
@@ -66,9 +57,8 @@ void GestureSeparation_SetDefault(void)
     g_cfg.gyro_stop_threshold = 15.0f;
     g_cfg.still_time_ms = 180;
     g_cfg.min_motion_ms = 120;
-    g_cfg.max_motion_ms = 2000;
+    g_cfg.max_motion_ms = 5000;
 }
-
 void GestureSeparation_SetConfig(const GestureSeparationConfig *cfg)
 {
     if (cfg)
@@ -81,6 +71,7 @@ GestureSeparationConfig GestureSeparation_GetConfig(void)
     return g_cfg;
 }
 
+// === MOTION DETECT HELPERS ===
 float Gesture_AccelDeviationG(float ax, float ay, float az)
 {
     float amag = sqrtf(ax * ax + ay * ay + az * az);
@@ -98,6 +89,8 @@ bool Gesture_IsMotionInstant(float ax, float ay, float az, float gx, float gy, f
     return (a_dev >= g_cfg.accel_start_threshold) || (g_mag >= g_cfg.gyro_start_threshold);
 }
 
+// === SEPARATION LOGIC (FSM) ===
+// Clear FSM and capture buffer
 void GestureCapture_Reset(void)
 {
     s_cap_state = CAPTURE_WAITING;
@@ -105,10 +98,12 @@ void GestureCapture_Reset(void)
     s_motion_start_ms = 0;
     s_still_start_ms = 0;
 }
+// Return current capture phase
 GestureCaptureState GestureCapture_GetState(void)
 {
     return s_cap_state;
 }
+// Core gesture FSM
 bool GestureCapture_Update(const IMUReading *sample, Gesture_t *out_gesture)
 {
     if (!sample || !out_gesture)
@@ -120,14 +115,62 @@ bool GestureCapture_Update(const IMUReading *sample, Gesture_t *out_gesture)
 
     switch (s_cap_state)
     {
-    case CAPTURE_WAITING:
-        // TODO: if (moving) { start time, switch state}
+    case CAPTURE_WAITING: // wait for movement
+        if (moving)
+        {
+            memset(&s_current, 0, sizeof(s_current));
+            s_current.start_time_ms = now;
+            s_motion_start_ms = now;
+            s_still_start_ms = 0;
+            s_cap_state = CAPTURING;
+        }
         return false;
-    case CAPTURING:
-        // TODO: time duration threshold, motion threshold
+    case CAPTURING: // collect samples into capture buffer
+        if (s_current.sample_count < gesture_capacity())
+        {
+            s_current.samples[s_current.sample_count++] = *sample;
+        }
+        // Time duration threshold: too long, force complete
+        if ((now - s_motion_start_ms) >= cfg.max_motion_ms)
+        {
+            s_current.end_time_ms = now;
+            *out_gesture = s_current;
+            GestureCapture_Reset();
+            return true;
+        }
+        if (!moving)
+        {
+            s_still_start_ms = now;
+            s_cap_state = CAPTURE_END_CANDIDATE;
+        }
         return false;
-    case CAPTURE_END_CANDIDATE:
-        // TODO: motion threshold, time threshold
+    case CAPTURE_END_CANDIDATE: // when still enough for long enough
+        if (s_current.sample_count < gesture_capacity())
+        {
+            s_current.samples[s_current.sample_count++] = *sample;
+        }
+        // motion resumed. continue capturing
+        if (moving)
+        {
+            s_still_start_ms = 0;
+            s_cap_state = CAPTURING;
+            return false;
+        }
+        // no motion for long enough. complete capture
+        if ((now - s_still_start_ms) >= cfg.still_time_ms)
+        {
+            uint32_t dur = now - s_motion_start_ms;
+            // if too short or noisy, discard
+            if (dur < cfg.min_motion_ms)
+            {
+                GestureCapture_Reset();
+                return false;
+            }
+            s_current.end_time_ms = now;
+            *out_gesture = s_current;
+            GestureCapture_Reset();
+            return true;
+        }
         return false;
     }
     return false;

@@ -2,7 +2,7 @@
 #include "gesture.h"
 
 static LockState current_state = STATE_IDLE;
-static Gesture_t recorded_key[3];
+static Gesture_t recorded_key[3]; // stores the 3-gesture key
 static uint8_t gesture_index = 0;
 static bool key_recorded = false;
 static bool unlocked = false;
@@ -80,7 +80,7 @@ void States_ClearKey()
 }
 
 // called when a gesture is completed, returns the result of the gesture handling
-GestureResult States_HandleGestureComplete(Gesture_t gesture)
+GestureResult States_HandleGestureComplete(const Gesture_t &gesture)
 {
     // check is all 3 gestures were already checked
     if (gesture_index >= REQUIRED_GESTURES)
@@ -90,13 +90,13 @@ GestureResult States_HandleGestureComplete(Gesture_t gesture)
 
     if (current_state == STATE_RECORDING)
     {
-        recorded_key[gesture_index] = gesture;
+        recorded_key[gesture_index] = gesture; // store the gesture
         gesture_index++;
 
         // if all 3 gestures recorded, save the key and go back to idle
         if (gesture_index >= REQUIRED_GESTURES)
         {
-            key_recorded = true;
+            key_recorded = true; // all recorded
             current_state = STATE_IDLE;
             gesture_index = 0;
             return RECORD_COMPLETE;

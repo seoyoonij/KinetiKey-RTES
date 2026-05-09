@@ -40,7 +40,7 @@ void States_StartUnlock();
 void States_ResetToIdle();
 void States_ClearKey();
 
-GestureResult States_HandleGestureComplete(Gesture_t gesture);
+GestureResult States_HandleGestureComplete(const Gesture_t &gesture);
 
 LockState States_GetState();
 uint8_t States_GetGestureIndex();

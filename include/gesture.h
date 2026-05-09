@@ -7,22 +7,26 @@
 
 #define GESTURE_MAX_SAMPLES 256
 
-// data structure: "what describes a gesture"
 typedef struct
 {
     IMUReading samples[GESTURE_MAX_SAMPLES];
+    // capture buffer info
     uint16_t sample_count;
     uint32_t start_time_ms;
     uint32_t end_time_ms;
+    // additional info
     float axes[3];        // [x,y,z] angles (degrees)
     float peak_vel;       // peak angular velocity magnitude (rad/s)
     uint32_t duration_ms; // duration of motion (ms)
-} Gesture_t;
+    // float peak_accel_dev_g;
+    // float peak_gyro_dps;
+    // float mean_accel_dev_g;
+    // float peak_gyro_dps_g;
+} Gesture_t; // : holds sample buffers (what describes one gesture)
 
 void Gesture_Reset(Gesture_t *g);
 void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt);
-float Gesture_Error(Gesture_t performed, Gesture_t recorded); // use Euclidean vector distance
-bool isMotionDetected(const IMUReading &reading);
+float Gesture_Error(const Gesture_t &performed, const Gesture_t &recorded); // use Euclidean vector distance
 
 // "how to separate one gesture"
 typedef struct
@@ -55,8 +59,9 @@ typedef enum
     CAPTURE_END_CANDIDATE
 } GestureCaptureState;
 
+// Regarding one IMU sample
 void GestureCapture_Reset(void);
-bool GestureCapture_Update(const IMUReading *sample, Gesture_t *out_gesture); // Feed one IMU sample. Returns true only when one full gesture is separated and copied to out_gesture.
+bool GestureCapture_Update(const IMUReading *sample, Gesture_t *out_gesture); // true: one full gesture is separated and copied to out_gesture
 GestureCaptureState GestureCapture_GetState(void);
 
 // Parameters
