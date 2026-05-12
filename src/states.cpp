@@ -7,6 +7,7 @@ static Gesture_t recorded_key[3]; // stores the 3-gesture key
 static uint8_t gesture_index = 0;
 static bool key_recorded = false;
 static bool unlocked = false;
+static bool unlock_sequence_failed = false;
 static float last_error = 0.0f;
 
 static const uint8_t REQUIRED_GESTURES = 3;
@@ -19,6 +20,7 @@ void States_Init()
     key_recorded = false;
     last_error = 0.0f;
     unlocked = false;
+    unlock_sequence_failed = false;
 
     for (uint8_t i = 0; i < REQUIRED_GESTURES; i++)
     {
@@ -40,6 +42,7 @@ void States_StartRecord()
     gesture_index = 0;
     key_recorded = false;
     unlocked = false;
+    unlock_sequence_failed = false;
     last_error = 0.0f;
 }
 
@@ -54,6 +57,7 @@ void States_StartUnlock()
 
     current_state = STATE_UNLOCKING;
     gesture_index = 0;
+    unlock_sequence_failed = false;
     last_error = 0.0f;
 }
 
@@ -71,6 +75,7 @@ void States_ClearKey()
     gesture_index = 0;
     key_recorded = false;
     unlocked = false;
+    unlock_sequence_failed = false;
     last_error = 0.0f;
 
     for (uint8_t i = 0; i < REQUIRED_GESTURES; i++)
@@ -111,22 +116,27 @@ GestureResult States_HandleGestureComplete(const Gesture_t &gesture)
         CompareResult compare = Compare_Gestures(gesture, recorded_key[gesture_index]);
         last_error = compare.total_error;
 
-        // if compare module says it does not match, fail immediately
+        // TEMP DEBUG: keep checking all 3 gestures before failing, so tuning prints every compare result
         if (!compare.matched)
         {
-            current_state = STATE_FAIL;
-            gesture_index = 0;
-            return UNLOCK_FAILED;
+            unlock_sequence_failed = true;
         }
 
         gesture_index++;
 
-        // if all 3 gestures matched, unlock successful
+        // if all 3 gestures were checked, decide pass/fail for the whole unlock attempt
         if (gesture_index >= REQUIRED_GESTURES)
         {
+            gesture_index = 0;
+
+            if (unlock_sequence_failed)
+            {
+                current_state = STATE_FAIL;
+                return UNLOCK_FAILED;
+            }
+
             unlocked = true;
             current_state = STATE_PASS;
-            gesture_index = 0;
             return UNLOCK_COMPLETE;
         }
 
