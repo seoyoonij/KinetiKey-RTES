@@ -59,14 +59,3 @@ bool LSM6DSL::readIMU(IMUReading &reading)
 
     return true;
 }
-
-bool LSM6DSL::enableDataReadyInterrupt()
-{
-    // 1. Route "Accelerometer Data Ready" to the INT1 pin
-    // Register INT1_CTRL (0x0D), Bit 0 is INT1_DRDY_XL
-    writeReg(0x0D, 0x01);
-
-    // 2. (Optional) Set interrupt to Latched or Pulsed in CTRL3_C
-    // Your previous 0x44 setting already handles basic behavior.
-    return true;
-}

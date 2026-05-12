@@ -4,25 +4,26 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "data_struct.h"
-
-#define GESTURE_MAX_SAMPLES 256
+#include "fft.h"
 
 typedef struct
 {
-    IMUReading samples[GESTURE_MAX_SAMPLES];
     // capture buffer info
     uint16_t sample_count;
     uint32_t start_time_ms;
     uint32_t end_time_ms;
+    IMUReading first_sample;
+    IMUReading last_sample;
+
     // additional info
-    float axes[3];        // [x,y,z] angles (degrees)
-    float peak_vel;       // peak angular velocity magnitude (rad/s)
-    uint32_t duration_ms; // duration of motion (ms)
-    // float peak_accel_dev_g;
-    // float peak_gyro_dps;
-    // float mean_accel_dev_g;
-    // float peak_gyro_dps_g;
-} Gesture_t; // : holds sample buffers (what describes one gesture)
+    float axes[3];          // [x,y,z] angles (degrees)
+    float peak_vel;         // peak angular velocity magnitude (deg/s)
+    float accel_energy;     // accumulated accelerometer motion energy
+    float peak_accel_dev_g; // largest accel deviation from 1g
+    FFTFeaturesResult fft_features;
+    bool fft_valid;
+    uint32_t duration_ms;   // duration of motion (ms)
+} Gesture_t; // : holds compact features that describe one gesture
 
 void Gesture_Reset(Gesture_t *g);
 void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt);

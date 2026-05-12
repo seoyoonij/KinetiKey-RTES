@@ -44,7 +44,6 @@ GestureResult States_HandleGestureComplete(const Gesture_t &gesture);
 
 LockState States_GetState();
 uint8_t States_GetGestureIndex();
-bool States_HasRecordedKey();
 float States_GetLastError();
 
 #endif

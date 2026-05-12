@@ -1,13 +1,14 @@
 #include "compare.h"
 #include "fft.h"
 #include <math.h>
+#include <stdio.h>
 
-// NEEDS TUNINGGG!!!!!!!!!
 static const float ROTATION_WEIGHT = 1.0f;
 static const float ACCEL_ENERGY_WEIGHT = 1.0f;
-static const float PEAK_WEIGHT = 1.0f;
-static const float FFT_WEIGHT = 1.0f;
-static const float MATCH_THRESHOLD = 50.0f;
+static const float DURATION_WEIGHT = 20.0f;
+static const float PEAK_WEIGHT = 0.5f;
+static const float FFT_WEIGHT = 0.5f;
+static const float MATCH_THRESHOLD = 80.0f;
 
 // compares performed gesture to the recorded key
 static float vectorError(const float a[3], const float b[3])
@@ -19,106 +20,56 @@ static float vectorError(const float a[3], const float b[3])
     return sqrtf(dx * dx + dy * dy + dz * dz);
 }
 
-// helper to calculate total accelerometer motion energy for a gesture
-static float accelEnergy(const Gesture_t &gesture)
+static float accelEnergyPerSecond(const Gesture_t &gesture)
 {
-    float energy = 0.0f;
-
-    for (uint16_t i = 0; i < gesture.sample_count; i++)
-    {
-        float ax = gesture.samples[i].ax;
-        float ay = gesture.samples[i].ay;
-        float az = gesture.samples[i].az;
-        float magnitude = sqrtf((ax * ax) + (ay * ay) + (az * az));
-        float deviation = fabsf(magnitude - 1.0f);
-
-        energy += deviation * deviation;
-    }
-
-    return energy;
-}
-
-// helper to build an accelerometer magnitude deviation signal and compute FFT-based features
-static float accelDeviationFromSample(const IMUReading &sample)
-{
-    float magnitude = sqrtf((sample.ax * sample.ax) +
-                            (sample.ay * sample.ay) +
-                            (sample.az * sample.az));
-
-    return fabsf(magnitude - 1.0f);
-}
-
-// builds an accelerometer magnitude deviation signal for FFT input
-static bool buildAccelFftSignal(const Gesture_t &gesture, float signal[FFT_SIZE])
-{
-    if (gesture.sample_count == 0)
-    {
-        return false;
-    }
-
-    if (gesture.sample_count == 1)
-    {
-        float deviation = accelDeviationFromSample(gesture.samples[0]);
-
-        for (int i = 0; i < FFT_SIZE; i++)
-        {
-            signal[i] = deviation;
-        }
-
-        return true;
-    }
-
-    for (int i = 0; i < FFT_SIZE; i++)
-    {
-        uint32_t sourceIndex =
-            ((uint32_t)i * (gesture.sample_count - 1)) / (FFT_SIZE - 1);
-
-        signal[i] = accelDeviationFromSample(gesture.samples[sourceIndex]);
-    }
-
-    return true;
-}
-
-static float fftErrorFromSamples(const Gesture_t &performed, const Gesture_t &recorded)
-{
-    float performedSignal[FFT_SIZE];
-    float recordedSignal[FFT_SIZE];
-    FFTFeaturesResult performedFft;
-    FFTFeaturesResult recordedFft;
-
-    if (!buildAccelFftSignal(performed, performedSignal) ||
-        !buildAccelFftSignal(recorded, recordedSignal))
+    if (gesture.duration_ms == 0)
     {
         return 0.0f;
     }
 
-    if (!FFT_Compute(performedSignal, &performedFft) ||
-        !FFT_Compute(recordedSignal, &recordedFft))
-    {
-        return 0.0f;
-    }
-
-    return FFTFeaturesError(&performedFft, &recordedFft);
+    return gesture.accel_energy / ((float)gesture.duration_ms / 1000.0f);
 }
+
 
 CompareResult Compare_Gestures(const Gesture_t &performed, const Gesture_t &recorded)
 {
     CompareResult result;
 
     result.rotation_error = vectorError(performed.axes, recorded.axes);
-    result.accel_energy_error = fabsf(accelEnergy(performed) - accelEnergy(recorded));
+    result.accel_energy_error = fabsf(accelEnergyPerSecond(performed) -
+                                      accelEnergyPerSecond(recorded));
+    result.duration_error = fabsf((float)performed.duration_ms -
+                                  (float)recorded.duration_ms) / 1000.0f;
     result.peak_error = fabsf(performed.peak_vel - recorded.peak_vel);
-    result.fft_error = fftErrorFromSamples(performed, recorded);
+    if (performed.fft_valid && recorded.fft_valid)
+    {
+        result.fft_error = FFTFeaturesError(&performed.fft_features, &recorded.fft_features);
+    }
+    else
+    {
+        result.fft_error = 0.0f;
+    }
 
     // combine errors into total error with weights
     result.total_error =
         ROTATION_WEIGHT * result.rotation_error +
         ACCEL_ENERGY_WEIGHT * result.accel_energy_error +
+        DURATION_WEIGHT * result.duration_error +
         PEAK_WEIGHT * result.peak_error +
         FFT_WEIGHT * result.fft_error;
 
     // determine if matched based on threshold
     result.matched = result.total_error < MATCH_THRESHOLD;
+
+    // displays compare components
+    printf("COMPARE rotation=%.2f accel_energy=%.2f duration=%.2f peak=%.2f fft=%.2f total=%.2f matched=%d\r\n",
+           result.rotation_error,
+           result.accel_energy_error,
+           result.duration_error,
+           result.peak_error,
+           result.fft_error,
+           result.total_error,
+           (int)result.matched);
 
     return result;
 }
