@@ -116,7 +116,6 @@ GestureResult States_HandleGestureComplete(const Gesture_t &gesture)
         CompareResult compare = Compare_Gestures(gesture, recorded_key[gesture_index]);
         last_error = compare.total_error;
 
-        // TEMP DEBUG: keep checking all 3 gestures before failing, so tuning prints every compare result
         if (!compare.matched)
         {
             unlock_sequence_failed = true;
@@ -124,7 +123,7 @@ GestureResult States_HandleGestureComplete(const Gesture_t &gesture)
 
         gesture_index++;
 
-        // if all 3 gestures were checked, decide pass/fail for the whole unlock attempt
+        // decide pass/fail for the whole unlock attempt
         if (gesture_index >= REQUIRED_GESTURES)
         {
             gesture_index = 0;
@@ -154,11 +153,6 @@ LockState States_GetState()
 uint8_t States_GetGestureIndex()
 {
     return gesture_index;
-}
-
-bool States_HasRecordedKey()
-{
-    return key_recorded;
 }
 
 float States_GetLastError()

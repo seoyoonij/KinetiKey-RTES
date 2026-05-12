@@ -146,7 +146,7 @@ static void handleGestureCapture()
 
     GestureResult result = States_HandleGestureComplete(completedGesture);
 
-    // print result for tuning gesture thresholds and compare weights
+    // print result for compare weights
     printf("GestureResult=%d idx=%u err=%.2f samples=%u duration=%lu ms\r\n",
            (int)result,
            States_GetGestureIndex(),

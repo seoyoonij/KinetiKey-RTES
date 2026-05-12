@@ -12,6 +12,7 @@ static float s_fft_signal[FFT_SIZE];
 static uint16_t s_fft_sample_count = 0;
 static float s_last_fft_value = 0.0f;
 
+// resets gesture data structure
 void Gesture_Reset(Gesture_t *g)
 {
     if (!g)
@@ -22,6 +23,7 @@ void Gesture_Reset(Gesture_t *g)
     memset(g, 0, sizeof(Gesture_t));
 }
 
+// updates gesture features with new IMU sample (called in capture)
 void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt)
 {
     // Integrate Angular Displacement
@@ -38,6 +40,7 @@ void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt)
     g->duration_ms += (uint32_t)(dt * 1000.0f);
 }
 
+// computes error between two gestures as Euclidean distance between their angle vectors
 float Gesture_Error(const Gesture_t &performed, const Gesture_t &recorded)
 {
     // Euclidean distance between the two 3D points
@@ -106,6 +109,7 @@ GestureCaptureState GestureCapture_GetState(void)
     return s_cap_state;
 }
 
+// add new sample to capture buffer and update features, called on each IMU sample during capture
 static void GestureCapture_AddSample(const IMUReading *sample)
 {
     uint32_t now = sample->timestamp_ms;
@@ -141,6 +145,7 @@ static void GestureCapture_AddSample(const IMUReading *sample)
     }
 }
 
+// called when motion ends to finalize gesture features and output completed gesture
 static void GestureCapture_Finish(uint32_t end_time_ms, Gesture_t *out_gesture)
 {
     s_current.end_time_ms = end_time_ms;

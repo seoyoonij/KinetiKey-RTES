@@ -3,13 +3,12 @@
 #include <math.h>
 #include <stdio.h>
 
-// NEEDS TUNINGGG!!!!!!!!!
 static const float ROTATION_WEIGHT = 1.0f;
 static const float ACCEL_ENERGY_WEIGHT = 1.0f;
 static const float DURATION_WEIGHT = 20.0f;
 static const float PEAK_WEIGHT = 0.5f;
 static const float FFT_WEIGHT = 0.5f;
-static const float MATCH_THRESHOLD = 60.0f;
+static const float MATCH_THRESHOLD = 80.0f;
 
 // compares performed gesture to the recorded key
 static float vectorError(const float a[3], const float b[3])
@@ -62,7 +61,7 @@ CompareResult Compare_Gestures(const Gesture_t &performed, const Gesture_t &reco
     // determine if matched based on threshold
     result.matched = result.total_error < MATCH_THRESHOLD;
 
-    // ADDED DEBUG PRINT: displays compare components for threshold tuning
+    // displays compare components
     printf("COMPARE rotation=%.2f accel_energy=%.2f duration=%.2f peak=%.2f fft=%.2f total=%.2f matched=%d\r\n",
            result.rotation_error,
            result.accel_energy_error,
