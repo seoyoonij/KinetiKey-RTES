@@ -1,6 +1,6 @@
 Motion password system.
 
-=== File structure===
+# File structure
 GESTURE: vectors and math
 STATES: IDLE, RECORDING, UNLOCKING etc.
 IMU: imu driver functions

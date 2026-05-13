@@ -3,7 +3,8 @@
 #include <math.h>
 #include <stdio.h>
 
-static const float ROTATION_WEIGHT = 1.0f;
+// tuned thresholds
+static const float ROTATION_WEIGHT = 2.0f;
 static const float ACCEL_ENERGY_WEIGHT = 1.0f;
 static const float DURATION_WEIGHT = 20.0f;
 static const float PEAK_WEIGHT = 0.5f;
@@ -36,10 +37,8 @@ CompareResult Compare_Gestures(const Gesture_t &performed, const Gesture_t &reco
     CompareResult result;
 
     result.rotation_error = vectorError(performed.axes, recorded.axes);
-    result.accel_energy_error = fabsf(accelEnergyPerSecond(performed) -
-                                      accelEnergyPerSecond(recorded));
-    result.duration_error = fabsf((float)performed.duration_ms -
-                                  (float)recorded.duration_ms) / 1000.0f;
+    result.accel_energy_error = fabsf(accelEnergyPerSecond(performed) - accelEnergyPerSecond(recorded));
+    result.duration_error = fabsf((float)performed.duration_ms - (float)recorded.duration_ms) / 1000.0f;
     result.peak_error = fabsf(performed.peak_vel - recorded.peak_vel);
     if (performed.fft_valid && recorded.fft_valid)
     {

@@ -40,16 +40,6 @@ void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt)
     g->duration_ms += (uint32_t)(dt * 1000.0f);
 }
 
-// computes error between two gestures as Euclidean distance between their angle vectors
-float Gesture_Error(const Gesture_t &performed, const Gesture_t &recorded)
-{
-    // Euclidean distance between the two 3D points
-    float dx = performed.axes[0] - recorded.axes[0];
-    float dy = performed.axes[1] - recorded.axes[1];
-    float dz = performed.axes[2] - recorded.axes[2];
-    return sqrtf(dx * dx + dy * dy + dz * dz);
-}
-
 // === SEPARATION CONFIG ===
 void GestureSeparation_SetDefault(void)
 {

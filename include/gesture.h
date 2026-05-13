@@ -27,7 +27,6 @@ typedef struct
 
 void Gesture_Reset(Gesture_t *g);
 void Gesture_Update(Gesture_t *g, float gx, float gy, float gz, float dt);
-float Gesture_Error(const Gesture_t &performed, const Gesture_t &recorded); // use Euclidean vector distance
 
 // "how to separate one gesture"
 typedef struct
