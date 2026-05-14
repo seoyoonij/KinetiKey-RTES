@@ -55,7 +55,7 @@ IDLE
   → [short press] → UNLOCKING → [3 gestures done] → PASS or FAIL → IDLE
 ```
 
-# Pipeline
+## Pipeline
 [ SENSE -> CAPTURE -> COMPARE -> DECIDE ]
 
 ```
