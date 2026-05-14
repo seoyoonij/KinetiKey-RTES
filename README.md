@@ -1,68 +1,73 @@
-Motion password system.
+# KinetiKey — Motion Password Lock
 
-# File structure
-GESTURE: vectors and math
-STATES: IDLE, RECORDING, UNLOCKING etc.
-IMU: imu driver functions
-MAIN: timing
-=====================
+Record a 3-gesture sequence as a key. Replay it to unlock.
 
-# Defining motion passwords
-### Distinction criteria
-* Angle of tilt: 45deg ≠ 60 deg
-* Shape: circle ≠ triangle
-* Intensity: slow push ≠ jerk; fast circle ≠ slow circle
-* Size: small circle ≠ large circle
+## User Manual
+| Action | Result |
+|---|---|
+| Hold button (≥1s) | Enter RECORDING mode |
+| Short press | Enter UNLOCKING mode |
+| Perform 3 gestures | One at a time, pause between each |
+| 3 gestures match key | PASS (green LED 1, 3s) |
+| Any gesture fails | FAIL (green LED 2, 3s) |
 
-### End-of-Gesture
-* current: time-based pause
-* consideration: closed shape/ physical End-of-Gesture
+*Example gestures: tilt, shapes, curves, etc.*
 
-### Example gestures
-* tilt, shapes, curves, etc.
+**LED feedback:**
+- IDLE: both off
+- RECORDING: alternating blink
+- UNLOCKING: synchronous blink
+- PASS: LED1 solid
+- FAIL: LED2 solid
 
+## Gesture Distinction criteria
+- Direction of rotation (axes[3] from gyro integration)
+- Motion intensity (peak angular velocity)
+- Duration
+- Acceleration energy profile (FFT of accel deviation signal)
 
-# Detection Logic
-* motion → compress → scalars → match scalars
-* General approach: Δ=∣Performed−Recorded|, threshold for each
-* Each point is a vector in 3D.
+## Detection Logic
+Each gesture is captured as a feature vector:
 
-| Data          | Information                        | Input                                           |
-|---------------|------------------------------------|-------------------------------------------------|
-| Vector        | Direction/magnitude of rotation    | Gyro                                            |
-| Euclidean distance   | Accuracy of motion                 | d = sqrt((x2-x1)^2 + (y2-y1)^2 + (z2-z1)^2)     |
-| Intensity     | Max angular velocity               | Gyro                                            |
-| Duration      | How long is motion                 | Timer                                           |
+| Feature | Source | How |
+|---|---|---|
+| Rotation vector | Gyro | integrate gx,gy,gz × dt |
+| Peak velocity | Gyro | max angular speed during motion |
+| Accel energy | Accel | sum of (|a|-1g)² per sample |
+| Duration | Timer | end_ms - start_ms |
+| FFT bins | Accel deviation signal | normalized energy per bin |
 
+Comparison: weighted sum of per-feature absolute differences.  
+Match threshold: total error < 80.0 (empirical).
 
-# Gesture Logic (State Machine)
-* 3 states
-* Driven by button interrupts
+## Gesture Separation
+One gesture = one motion between two still periods.
 
-IDLE -> [button hold] -> RECORDING -> [3 gestures done] -> IDLE \
-IDLE -> [button press] -> UNLOCKING -> [3 gestures done] -> PASS/FAIL -> IDLE \
+- Motion start: `|a| - 1g > 0.18g` OR `|gyro| > 35 dps`
+- Motion end: below stop threshold for ≥ 1000ms
+- Min motion duration: 1000ms (discard noise)
+- Max motion duration: 5000ms (force complete)
 
-*during RECORDING/UNLOCKING, subloop pseudocde:*
-* WAIT 
-* if motion is big enough, enter OBSERVE
-* OBSERVE (high priority, over Nyquist): \
-    start logging motion. \
-    if motion is small for long enough, then one motion is done. 
-* EVALUATE (low priority- ISR): \ 
-    if above threshold error (pass), then blink LED, move onto next motion.\
-    else (fail), then reset motion count, return to IDLE state.
+## State Machine
+```
+IDLE
+  → [hold ≥1s] → RECORDING → [3 gestures done] → IDLE
+  → [short press] → UNLOCKING → [3 gestures done] → PASS or FAIL → IDLE
+```
 
-# Pipeline Overview (wip)
+# Pipeline
 [ SENSE -> CAPTURE -> COMPARE -> DECIDE ]
 
-IMU Sample (Ticker, 50Hz)
-    ↓
-Gesture Window Capture (ring buffer, ~100 samples)
-    ↓
-Feature Extraction (magnitude signal √ax²+ay²+az²)
-    ↓
-Gesture Boundary Detection (motion start/end via threshold)
-    ↓
-Store or Compare (DTW against stored template)
-    ↓
-LED Feedback
+```
+LSM6DSL (I2C, 104Hz)
+    ↓ ax,ay,az (g), gx,gy,gz (dps)
+GestureCapture_Update()
+    WAITING → CAPTURING → END_CANDIDATE → emit Gesture_t
+    ↓ Gesture_t (features + FFT)
+States_HandleGestureComplete()
+    RECORDING: store to recorded_key[0..2]
+    UNLOCKING: Compare_Gestures() per gesture
+        ↓ CompareResult (rotation, energy, duration, peak, FFT)
+STATE_PASS / STATE_FAIL
+    ↓ LED feedback → IDLE
+```
